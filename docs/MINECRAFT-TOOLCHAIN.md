@@ -31,6 +31,10 @@ FestivalWorld Compiler is designed to export into the same kinds of workflows us
 python3 -m festivalworld.cli deploy --export-dir output/launch_test/launch_test --server-dir output/launch_test/server_ready --world-name launch_test
 ```
 
+### Paper plugin entry point
+
+A Paper plugin scaffold is included at [plugins/festivalworld-paper](plugins/festivalworld-paper). It exposes the command `/festivalworld <place> <festival>` and can trigger the local FestivalWorld export pipeline directly from the host machine when paired with a running server.
+
 ## Export files
 
 - heightmap.png
