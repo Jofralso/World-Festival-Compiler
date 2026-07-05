@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FestivalWorld Builder — Geo Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="/static/lib/three.min.js"></script>
+  <script src="/static/lib/OrbitControls.js"></script>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="logo"><i class="fas fa-cubes"></i> FestivalWorld</div>
+  <span class="badge">v0.2.0</span>
+  <span class="status"><span class="dot"></span> <span id="status-text">Ready</span></span>
+</nav>
+
+<!-- ========== SCREEN 1: SEARCH ========== -->
+<div id="screen-search" class="screen active">
+  <div class="wizard-step">
+    <div class="step-icon"><i class="fas fa-search-location"></i></div>
+    <h2>Find Your Festival Location</h2>
+    <p class="step-desc">Search for a real-world place to generate the festival world from real terrain and map data.</p>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;width:100%;max-width:700px;margin:20px auto">
+      <div style="flex:2;min-width:200px">
+        <label style="font-size:12px;color:var(--text3)"><i class="fas fa-festival"></i> Festival Name</label>
+        <input type="text" id="festival-name" value="My Festival" style="width:100%">
+      </div>
+      <div style="flex:3;min-width:250px">
+        <label style="font-size:12px;color:var(--text3)"><i class="fas fa-map-pin"></i> Location</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="search-query" placeholder="e.g. Glastonbury, UK" style="flex:1" autofocus>
+          <button class="btn btn-primary" id="search-btn"><i class="fas fa-search"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="search-results" style="max-width:700px;margin:12px auto;text-align:left"></div>
+
+    <div id="search-map" style="max-width:700px;height:350px;margin:12px auto;border-radius:var(--radius);overflow:hidden"></div>
+
+    <div style="margin-top:24px">
+      <div style="max-width:400px;margin:0 auto;display:flex;align-items:center;gap:12px">
+        <label style="font-size:13px;color:var(--text2);white-space:nowrap"><i class="fas fa-expand-arrows-alt"></i> Diameter</label>
+        <input type="range" id="diameter-slider" min="2" max="50" value="10" step="1" style="flex:1">
+        <span id="diameter-label" style="font-size:13px;color:var(--text);font-weight:600;min-width:50px">10 km</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-lg" id="step1-next" disabled style="margin-top:24px">
+      <i class="fas fa-arrow-right"></i> Select Location &amp; Continue
+    </button>
+  </div>
+</div>
+
+<!-- ========== SCREEN 2: EDIT ========== -->
+<div id="screen-edit" class="screen">
+  <div class="wizard-step">
+    <div class="step-icon"><i class="fas fa-map-marked-alt"></i></div>
+    <h2>Review &amp; Adjust</h2>
+    <p class="step-desc">The map shows real elevation and features for your chosen area. Adjust the selection if needed.</p>
+
+    <!-- Loading overlay for terrain fetch -->
+    <div id="terrain-loading" style="display:none;text-align:center;padding:40px">
+      <span class="spinner" style="font-size:32px;display:block;margin-bottom:12px"></span>
+      <p style="color:var(--text2)">Downloading SRTM elevation data &amp; OSM features...</p>
+      <p style="font-size:12px;color:var(--text3)">This may take a moment depending on the area size</p>
+    </div>
+
+    <div id="edit-content" style="display:none">
+      <!-- 2D/3D toggle pills -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="layer-pills" id="view-pills">
+          <span class="pill active" data-view="2d"><i class="fas fa-map"></i> 2D Map</span>
+          <span class="pill" data-view="3d"><i class="fas fa-cube"></i> 3D Preview</span>
+        </span>
+        <span id="three-hint" style="display:none;font-size:11px;color:var(--text3)">
+          <i class="fas fa-mouse-pointer"></i> Drag to orbit &middot; Scroll to zoom
+        </span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:12px;height:500px;margin-bottom:16px">
+        <!-- Left: Map container (Leaflet + Three.js) -->
+        <div id="edit-map" style="border-radius:var(--radius);overflow:hidden;background:var(--surface);border:1px solid var(--border);position:relative">
+          <div id="three-container" style="display:none;width:100%;height:100%;position:absolute;inset:0;z-index:2"></div>
+        </div>
+        <!-- Right: Info + Controls -->
+        <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+          <div class="card" style="padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px"><i class="fas fa-info-circle"></i> TERRAIN INFO</div>
+            <div id="edit-terrain-info" style="font-size:12px;color:var(--text3)">
+              <span>Loading...</span>
+            </div>
+          </div>
+          <div class="card" style="padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px"><i class="fas fa-route"></i> FEATURES</div>
+            <div id="edit-feature-info" style="font-size:12px;color:var(--text3)">—</div>
+          </div>
+          <div class="card" style="padding:12px;flex:1">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px"><i class="fas fa-sliders-h"></i> CONFIG</div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label style="font-size:11px;color:var(--text3)">Festival Style</label>
+              <select id="edit-style" style="font-size:12px">
+                <option value="electronic festival">Electronic Festival</option>
+                <option value="techno">Techno</option>
+                <option value="dnb arena">DnB Arena</option>
+                <option value="acoustic">Acoustic / Chill</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label style="font-size:11px;color:var(--text3)">World Name</label>
+              <input type="text" id="edit-world-name" value="festival_world" style="font-size:12px">
+            </div>
+            <div class="form-group">
+              <label style="font-size:11px;color:var(--text3)">SRTM Resolution</label>
+              <select id="edit-res" style="font-size:12px">
+                <option value="SRTMGL3">~90m (faster, smaller)</option>
+                <option value="SRTMGL1">~30m (slower, detailed)</option>
+              </select>
+            </div>
+          </div>
+          <div class="card" style="padding:10px">
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">
+              <i class="fas fa-images"></i> FESTIVAL IMAGES
+            </div>
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              <input type="text" id="festival-image-query" placeholder="Search images..." style="font-size:11px;flex:1" value="">
+              <button class="btn btn-primary" id="festival-image-btn" style="font-size:10px;padding:3px 8px"><i class="fas fa-search"></i></button>
+            </div>
+            <div id="festival-images" style="display:flex;gap:4px;flex-wrap:wrap;max-height:90px;overflow-y:auto"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-secondary" id="step2-back" style="flex:1;justify-content:center">
+              <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <button class="btn btn-primary" id="step2-build" style="flex:2;justify-content:center">
+              <i class="fas fa-hammer"></i> Build World
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview strip -->
+      <div class="terrain-strip" id="edit-preview-strip" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SCREEN 3: PROCESS ========== -->
+<div id="screen-process" class="screen">
+  <div class="wizard-step">
+    <div class="step-icon"><i class="fas fa-cogs"></i></div>
+    <h2>Generating Your Festival World</h2>
+    <p class="step-desc" id="process-desc">Processing real terrain data into a Minecraft world...</p>
+
+    <!-- Progress steps -->
+    <div id="progress-steps" style="max-width:600px;margin:24px auto;text-align:left">
+      <div class="progress-step" data-step="bounds"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Calculating world bounds</div>
+      <div class="progress-step" data-step="srtm"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Downloading SRTM elevation data</div>
+      <div class="progress-step" data-step="osm"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Fetching OSM features (roads, buildings, water)</div>
+      <div class="progress-step" data-step="terrain"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Building terrain &amp; integrating features</div>
+      <div class="progress-step" data-step="plan"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Planning festival layout</div>
+      <div class="progress-step" data-step="export"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Exporting Minecraft world</div>
+      <div class="progress-step" data-step="done"><span class="ps-icon"><i class="fas fa-circle-notch"></i></span> Done!</div>
+    </div>
+
+    <div id="process-log" class="log-box" style="max-width:600px;margin:12px auto;height:140px"></div>
+    <div id="process-result" style="display:none;margin-top:16px">
+      <p id="process-message" style="color:var(--green);font-size:16px;font-weight:600"></p>
+      <div id="process-output-tree" style="max-width:600px;margin:12px auto;font-size:12px;color:var(--text2);text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px"></div>
+      <div style="margin-top:12px;display:flex;gap:12px;justify-content:center">
+        <button class="btn btn-primary" id="process-view-3d"><i class="fas fa-cube"></i> View 3D</button>
+        <button class="btn btn-secondary" id="process-open-output"><i class="fas fa-folder-open"></i> Show Output</button>
+        <button class="btn btn-secondary" id="process-new"><i class="fas fa-undo"></i> Start Over</button>
+      </div>
+      <div id="process-3d-viewer" style="display:none;margin-top:16px;height:500px;border-radius:var(--radius);overflow:hidden;background:var(--surface);border:1px solid var(--border);position:relative">
+        <div id="process-3d-container" style="width:100%;height:100%"></div>
+        <button class="btn btn-secondary" id="process-3d-close" style="position:absolute;top:8px;right:8px;z-index:10;font-size:11px;padding:4px 10px"><i class="fas fa-times"></i> Close</button>
+      </div>
+    </div>
+    <div id="process-error" style="display:none;margin-top:16px">
+      <p style="color:var(--red);font-size:14px" id="process-error-msg"></p>
+      <button class="btn btn-secondary" id="process-retry" style="margin-top:8px"><i class="fas fa-redo"></i> Retry</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox (shared) -->
+<div id="lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:8px">
+  <img id="lightbox-img" style="max-width:92%;max-height:85%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,0.6)">
+  <span id="lightbox-caption" style="color:var(--text2);font-size:13px"></span>
+  <span id="lightbox-close" style="position:absolute;top:20px;right:30px;color:#fff;font-size:36px;cursor:pointer;opacity:0.6;line-height:1">&times;</span>
+</div>
+
+<script src="/static/gui.js"></script>
+</body>
+</html>

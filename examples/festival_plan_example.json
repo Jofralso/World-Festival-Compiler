@@ -1,0 +1,85 @@
+{
+  "main_stage": {
+    "name": "main_stage",
+    "x": 250,
+    "z": 250,
+    "radius": 80,
+    "style": "electronic festival"
+  },
+  "secondary_stages": [
+    {
+      "name": "secondary_1",
+      "x": 150,
+      "z": 120,
+      "radius": 50,
+      "style": "techno"
+    },
+    {
+      "name": "secondary_2",
+      "x": 380,
+      "z": 380,
+      "radius": 40,
+      "style": "acoustic"
+    }
+  ],
+  "camping": [
+    {
+      "x": 120,
+      "z": 360,
+      "width": 80,
+      "depth": 80
+    },
+    {
+      "x": 80,
+      "z": 180,
+      "width": 70,
+      "depth": 70
+    },
+    {
+      "x": 400,
+      "z": 160,
+      "width": 60,
+      "depth": 90
+    }
+  ],
+  "paths": [
+    {
+      "start": [
+        0,
+        250
+      ],
+      "end": [
+        250,
+        250
+      ]
+    },
+    {
+      "start": [
+        250,
+        250
+      ],
+      "end": [
+        150,
+        120
+      ]
+    },
+    {
+      "start": [
+        250,
+        250
+      ],
+      "end": [
+        380,
+        380
+      ]
+    }
+  ],
+  "entrance": [
+    0,
+    250
+  ],
+  "spawn": [
+    250,
+    170
+  ]
+}
