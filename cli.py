@@ -113,6 +113,16 @@ def preview_cmd(args: argparse.Namespace) -> None:
             print(f"  Preview display error: {e}")
 
 
+def deploy(args: argparse.Namespace) -> None:
+    """Copy the generated export into a server-ready deployment directory."""
+    from .core.deploy import deploy_to_server
+
+    export_dir = Path(args.export_dir)
+    server_dir = Path(args.server_dir)
+    result = deploy_to_server(export_dir, server_dir, world_name=args.world_name)
+    print(result)
+
+
 def list_schematics(args: argparse.Namespace) -> None:
     """List available schematics in the library."""
     schematic_dir = Path(args.dir)
@@ -172,6 +182,13 @@ def main() -> None:
     prev_p.add_argument("--output", "-o", help="Directory to save preview images")
     prev_p.add_argument("--show", action="store_true", help="Generate temp preview images")
     prev_p.set_defaults(func=preview_cmd)
+
+    # deploy
+    deploy_p = sub.add_parser("deploy", help="Deploy an exported festival build to a server-ready directory")
+    deploy_p.add_argument("--export-dir", required=True, help="Path to the generated export directory")
+    deploy_p.add_argument("--server-dir", required=True, help="Target Minecraft server directory")
+    deploy_p.add_argument("--world-name", help="Optional world folder name")
+    deploy_p.set_defaults(func=deploy)
 
     # schematics
     schem_p = sub.add_parser("schematics", help="List available schematics")

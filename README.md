@@ -12,6 +12,7 @@ FestivalWorld Compiler is a local-first procedural world generator for building 
 - Exposes a web GUI and REST API for interactive generation.
 - Exports a realistic toolchain package for WorldEdit, WorldPainter, and plugin-style deployment workflows.
 - Generates a plugin scaffold folder for Paper/Fabric-style server integration alongside the terrain and structure exports.
+- Provides an automated deployment command that copies the export bundle into a server-ready folder for immediate use.
 
 ## Core features
 

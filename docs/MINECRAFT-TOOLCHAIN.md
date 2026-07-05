@@ -21,8 +21,15 @@ FestivalWorld Compiler is designed to export into the same kinds of workflows us
 1. Generate terrain and festival plan.
 2. Export the heightmap and placement script.
 3. Import the terrain into WorldPainter for manual shaping.
-4. Apply the WorldEdit script in a server world.
-5. Use the plugin manifest as a deployment descriptor for automation.
+4. Run the automated deployment command to stage the export into a server-ready folder.
+5. Apply the WorldEdit script in a server world or bind it to a plugin command.
+6. Use the plugin manifest as a deployment descriptor for automation.
+
+### One-step deployment
+
+```bash
+python3 -m festivalworld.cli deploy --export-dir output/launch_test/launch_test --server-dir output/launch_test/server_ready --world-name launch_test
+```
 
 ## Export files
 
