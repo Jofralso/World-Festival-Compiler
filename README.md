@@ -10,6 +10,8 @@ FestivalWorld Compiler is a local-first procedural world generator for building 
 - Generates WorldEdit-compatible placement output.
 - Supports AI-assisted stage generation from festival-name-based image discovery and public reference metadata.
 - Exposes a web GUI and REST API for interactive generation.
+- Exports a realistic toolchain package for WorldEdit, WorldPainter, and plugin-style deployment workflows.
+- Generates a plugin scaffold folder for Paper/Fabric-style server integration alongside the terrain and structure exports.
 
 ## Core features
 
@@ -80,6 +82,7 @@ Then open http://127.0.0.1:8420.
 - [docs/FEATURES.md](docs/FEATURES.md) for the full feature wiki
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the implementation overview
 - [docs/CLI-API.md](docs/CLI-API.md) for commands and API endpoints
+- [docs/MINECRAFT-TOOLCHAIN.md](docs/MINECRAFT-TOOLCHAIN.md) for the Minecraft plugin/mod workflow and export format
 
 ## Roadmap
 

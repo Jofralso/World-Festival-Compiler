@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     worldpainter_path: str = "WorldPainter"
     qgis_path: str = "qgis_process"
+    worldedit_path: str = "worldedit"
+    plugin_manifest_path: str = "plugins/festivalworld"
 
     minecraft_world_name: str = "festival_world"
     server_type: str = "paper"  # paper | fabric

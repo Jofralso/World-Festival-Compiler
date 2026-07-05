@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 import warnings
 
+import cv2
+
 import numpy as np
 
 from .preprocessor import normalize_heightmap, find_flat_zones
@@ -118,10 +120,41 @@ def geo_to_block_coords(
     return np.column_stack([rows, cols])
 
 
+def infer_satellite_context(satellite_image: np.ndarray) -> dict[str, Any]:
+    """Infer coarse terrain context from a satellite-style image.
+
+    The goal is not full semantic segmentation, but to provide a conservative signal
+    for likely water bodies so the generator does not invent water in dry terrain.
+    """
+    if satellite_image is None:
+        return {"water_mask": np.zeros((0, 0), dtype=bool), "confidence": 0.0}
+
+    img = np.asarray(satellite_image)
+    if img.ndim == 2:
+        img = np.repeat(img[:, :, None], 3, axis=2)
+    if img.shape[0] == 0 or img.shape[1] == 0:
+        return {"water_mask": np.zeros((0, 0), dtype=bool), "confidence": 0.0}
+
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    _, mask = cv2.threshold(gray, 110, 255, cv2.THRESH_BINARY_INV)
+    blue_channel = img[:, :, 2].astype(np.float32)
+    green_channel = img[:, :, 1].astype(np.float32)
+    red_channel = img[:, :, 0].astype(np.float32)
+
+    blue_bias = (blue_channel > green_channel + 20) & (blue_channel > red_channel + 20)
+    dark_pixels = gray < 140
+    water_mask = blue_bias & dark_pixels & (mask > 0)
+    water_mask = cv2.medianBlur(water_mask.astype(np.uint8), 5).astype(bool)
+
+    confidence = float(water_mask.mean()) if water_mask.size else 0.0
+    return {"water_mask": water_mask, "confidence": confidence}
+
+
 def integrate_osm_features(
     heightmap: np.ndarray,
     osm_features: dict,
     bounds: tuple[float, float, float, float],
+    satellite_context: dict[str, Any] | None = None,
 ) -> tuple[np.ndarray, dict]:
     """Carve OSM features into the heightmap.
 
@@ -137,13 +170,20 @@ def integrate_osm_features(
     h, w = heightmap.shape
     masks = {}
 
-    # Water: set to lowest elevation
+    # Water: apply only when OSM evidence and satellite context both agree.
     water_coords = []
     for feat in osm_features.get("water", []):
         lats = [c[0] for c in feat["coords"]]
         lngs = [c[1] for c in feat["coords"]]
         pts = geo_to_block_coords(lats, lngs, bounds, (h, w))
         water_coords.extend(pts.tolist())
+
+    satellite_mask = None
+    if satellite_context:
+        sat_mask = np.asarray(satellite_context.get("water_mask", np.zeros((h, w), dtype=bool)))
+        if sat_mask.shape != (h, w):
+            sat_mask = cv2.resize(sat_mask.astype(np.uint8), (w, h), interpolation=cv2.INTER_LINEAR).astype(bool)
+        satellite_mask = sat_mask
 
     if water_coords:
         yy = np.array([p[0] for p in water_coords])
@@ -155,9 +195,13 @@ def integrate_osm_features(
         if has_binary_dilation:
             try:
                 from scipy.ndimage import binary_dilation
-                mask = binary_dilation(mask, iterations=3)
+                mask = binary_dilation(mask, iterations=2)
             except ImportError:
                 pass
+        if satellite_mask is not None and satellite_mask.any():
+            mask &= satellite_mask
+        if not mask.any():
+            mask = np.zeros((h, w), dtype=bool)
         sea_level = float(np.percentile(heightmap, 5))
         heightmap[mask] = sea_level
         masks["water"] = mask
@@ -546,6 +590,7 @@ class WorldBuilder:
         self.diameter = diameter_blocks
         self.heightmap: np.ndarray | None = None
         self.biome_map: np.ndarray | None = None
+        self.satellite_image: np.ndarray | None = None
         self.feature_masks: dict = {}
         self.flat_zones: list = []
         self.osm_features: dict = {}
@@ -578,9 +623,12 @@ class WorldBuilder:
         context = self.context_engine.predict_for(srtm_bounds)
         self.context_summary = context
 
-        # Integrate OSM features
+        # Integrate OSM features with conservative satellite-based water validation
+        satellite_context = None
+        if getattr(self, "satellite_image", None) is not None:
+            satellite_context = infer_satellite_context(self.satellite_image)
         if osm_features:
-            hmap, masks = integrate_osm_features(hmap, osm_features, srtm_bounds)
+            hmap, masks = integrate_osm_features(hmap, osm_features, srtm_bounds, satellite_context=satellite_context)
             self.feature_masks = masks
 
         if context.get("water_bias", 0.0) > 0.25:
