@@ -21,10 +21,28 @@ def deploy_to_server(export_dir: Path, server_dir: Path, world_name: str | None 
     plugin_dir = server_dir / "plugins" / "festivalworld"
     plugin_dir.mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(export_dir / "place_structures.we", plugin_dir / "place_structures.we")
-    shutil.copy2(export_dir / "plugin_manifest.json", plugin_dir / "plugin_manifest.json")
-    shutil.copy2(export_dir / "festival_plan.json", plugin_dir / "festival_plan.json")
-    shutil.copy2(export_dir / "heightmap.png", plugin_dir / "heightmap.png")
+    structure_script = export_dir / "place_structures.we"
+    if not structure_script.exists():
+        for candidate in ("place_structures.we", "world_edit_script.we", "structure_script.we"):
+            candidate_path = export_dir / candidate
+            if candidate_path.exists():
+                structure_script = candidate_path
+                break
+
+    if structure_script.exists():
+        shutil.copy2(structure_script, plugin_dir / structure_script.name)
+
+    manifest_path = export_dir / "plugin_manifest.json"
+    if manifest_path.exists():
+        shutil.copy2(manifest_path, plugin_dir / manifest_path.name)
+
+    plan_path = export_dir / "festival_plan.json"
+    if plan_path.exists():
+        shutil.copy2(plan_path, plugin_dir / plan_path.name)
+
+    heightmap_path = export_dir / "heightmap.png"
+    if heightmap_path.exists():
+        shutil.copy2(heightmap_path, plugin_dir / heightmap_path.name)
 
     deploy_script = plugin_dir / "deploy.sh"
     deploy_script.write_text(

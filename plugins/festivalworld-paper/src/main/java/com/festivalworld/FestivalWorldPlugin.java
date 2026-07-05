@@ -9,7 +9,11 @@ public class FestivalWorldPlugin extends JavaPlugin implements CommandExecutor {
     @Override
     public void onEnable() {
         getLogger().info("FestivalWorld plugin enabled");
-        this.getCommand("festivalworld").setExecutor(this);
+        if (this.getCommand("festivalworld") != null) {
+            this.getCommand("festivalworld").setExecutor(this);
+        } else {
+            getLogger().warning("The /festivalworld command was not registered by the server.");
+        }
     }
 
     @Override

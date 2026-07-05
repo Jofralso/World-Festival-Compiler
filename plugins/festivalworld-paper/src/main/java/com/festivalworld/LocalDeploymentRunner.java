@@ -8,24 +8,45 @@ import java.util.List;
 
 public class LocalDeploymentRunner {
     public static void trigger(String place, String festival) throws IOException, InterruptedException {
-        Path repoRoot = Path.of("/home/z3rt/festivalworld").toAbsolutePath();
-        Path exportDir = repoRoot.resolve("output").resolve(place.replaceAll("[^a-zA-Z0-9._-]", "_")).resolve("server_ready");
-        Files.createDirectories(exportDir);
+        Path repoRoot = Path.of("/home/z3rt/festivalworld").toAbsolutePath().normalize();
+        String placeSlug = place.replaceAll("[^a-zA-Z0-9._-]", "_");
+        Path exportRoot = repoRoot.resolve("output").resolve(placeSlug);
+        Path buildDir = exportRoot.resolve("build");
+        Path serverDir = exportRoot.resolve("server_ready");
 
-        List<String> command = new ArrayList<>();
-        command.add("python3");
-        command.add("-m");
-        command.add("festivalworld.cli");
-        command.add("build");
-        command.add("--map");
-        command.add(repoRoot.resolve("examples/heightmap_example.png").toString());
-        command.add("--style");
-        command.add(festival);
-        command.add("--name");
-        command.add(place.replaceAll("[^a-zA-Z0-9._-]", "_"));
-        command.add("--output");
-        command.add(exportDir.toString());
+        Files.createDirectories(buildDir);
+        Files.createDirectories(serverDir);
 
+        runCommand(repoRoot, List.of(
+            "python3",
+            "-m",
+            "cli",
+            "build",
+            "--map",
+            repoRoot.resolve("examples/heightmap_example.png").toString(),
+            "--style",
+            festival,
+            "--name",
+            placeSlug,
+            "--output",
+            buildDir.toString()
+        ), "FestivalWorld build");
+
+        runCommand(repoRoot, List.of(
+            "python3",
+            "-m",
+            "cli",
+            "deploy",
+            "--export-dir",
+            buildDir.toString(),
+            "--server-dir",
+            serverDir.toString(),
+            "--world-name",
+            placeSlug
+        ), "FestivalWorld deploy");
+    }
+
+    private static void runCommand(Path repoRoot, List<String> command, String description) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(repoRoot.toFile());
         pb.environment().put("PYTHONPATH", repoRoot.toString());
@@ -33,7 +54,7 @@ public class LocalDeploymentRunner {
         Process process = pb.start();
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new IOException("FestivalWorld build failed with exit code " + exitCode);
+            throw new IOException(description + " failed with exit code " + exitCode);
         }
     }
 }

@@ -80,10 +80,20 @@ Then open http://127.0.0.1:8420.
 ## Documentation
 
 - [tutorial.md](tutorial.md) for a practical walkthrough
+- [docs/README.md](docs/README.md) for the documentation index and navigation
 - [docs/FEATURES.md](docs/FEATURES.md) for the full feature wiki
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the implementation overview
 - [docs/CLI-API.md](docs/CLI-API.md) for commands and API endpoints
 - [docs/MINECRAFT-TOOLCHAIN.md](docs/MINECRAFT-TOOLCHAIN.md) for the Minecraft plugin/mod workflow and export format
+
+## Full wiki overview
+
+- Terrain analysis and buildable-zone detection
+- Layout planning for stages, camping, paths, entrances, and spawns
+- AI-assisted stage concepting using public reference metadata
+- Web UI and build visualization
+- Export generation for WorldEdit, WorldPainter, and Paper-compatible deployment
+- Local deployment staging for use in a real Minecraft server workflow
 
 ## Roadmap
 

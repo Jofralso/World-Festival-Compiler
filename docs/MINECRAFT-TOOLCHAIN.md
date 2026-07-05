@@ -28,7 +28,7 @@ FestivalWorld Compiler is designed to export into the same kinds of workflows us
 ### One-step deployment
 
 ```bash
-python3 -m festivalworld.cli deploy --export-dir output/launch_test/launch_test --server-dir output/launch_test/server_ready --world-name launch_test
+python3 -m cli deploy --export-dir output/launch_test/launch_test --server-dir output/launch_test/server_ready --world-name launch_test
 ```
 
 ### Paper plugin entry point
@@ -44,3 +44,18 @@ A Paper plugin scaffold is included at [plugins/festivalworld-paper](plugins/fes
 - world_manifest.json
 - plugins/festivalworld/plugin.yml
 - plugins/festivalworld/README.md
+
+## Deployment layout
+
+The deployment command stages files into a folder that looks like this:
+
+```text
+server_ready/
+  plugins/
+    festivalworld/
+      place_structures.we
+      plugin_manifest.json
+      festival_plan.json
+      heightmap.png
+      deploy.sh
+```
