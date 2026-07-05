@@ -7,3 +7,5 @@ output/*/
 !.output/README.md
 .venv/
 venv/
+plugins/*/target/
+**/target/

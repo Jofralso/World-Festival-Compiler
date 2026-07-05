@@ -4,8 +4,16 @@ import argparse
 import sys
 from pathlib import Path
 
-from .core.config import Settings
-from .core.pipeline import FestivalWorldPipeline
+if __package__ in {None, ""}:
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+try:
+    from .core.config import Settings
+    from .core.pipeline import FestivalWorldPipeline
+except ImportError:
+    from core.config import Settings
+    from core.pipeline import FestivalWorldPipeline
 
 
 def build(args: argparse.Namespace) -> None:
@@ -17,7 +25,10 @@ def build(args: argparse.Namespace) -> None:
         output_dir=Path(args.output),
         minecraft_world_name=args.name,
     )
-    from .core.llm import LLMConfig
+    try:
+        from .core.llm import LLMConfig
+    except ImportError:
+        from core.llm import LLMConfig
     llm_cfg = LLMConfig(base_url=args.llm_url, model=args.llm_model)
     pipeline = FestivalWorldPipeline(settings, use_llm=args.use_llm, llm_config=llm_cfg)
     result = pipeline.build(map_path=settings.map_path)
@@ -29,8 +40,12 @@ def build(args: argparse.Namespace) -> None:
 
 def plan_cmd(args: argparse.Namespace) -> None:
     """Analyse a map and show the festival plan without building."""
-    from .core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
-    from .core.layout import LayoutPlanner
+    try:
+        from .core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
+        from .core.layout import LayoutPlanner
+    except ImportError:
+        from core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
+        from core.layout import LayoutPlanner
 
     hmap = load_heightmap(Path(args.map))
     terrain = classify_terrain(hmap)
@@ -52,14 +67,21 @@ def plan_cmd(args: argparse.Namespace) -> None:
 
 def serve(args: argparse.Namespace) -> None:
     """Start the FastAPI orchestration server."""
-    from .api.server import start_server
+    try:
+        from .api.server import start_server
+    except ImportError:
+        from api.server import start_server
     start_server(host=args.host, port=args.port)
 
 
 def preview_cmd(args: argparse.Namespace) -> None:
     """Preview a topographic map with terrain analysis and overlays."""
-    from .core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
-    from .core.preview import analyse_terrain, render_all_maps, try_3d_plot
+    try:
+        from .core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
+        from .core.preview import analyse_terrain, render_all_maps, try_3d_plot
+    except ImportError:
+        from core.preprocessor import load_heightmap, find_flat_zones, classify_terrain
+        from core.preview import analyse_terrain, render_all_maps, try_3d_plot
     from pathlib import Path
 
     map_path = Path(args.map)
@@ -115,7 +137,10 @@ def preview_cmd(args: argparse.Namespace) -> None:
 
 def deploy(args: argparse.Namespace) -> None:
     """Copy the generated export into a server-ready deployment directory."""
-    from .core.deploy import deploy_to_server
+    try:
+        from .core.deploy import deploy_to_server
+    except ImportError:
+        from core.deploy import deploy_to_server
 
     export_dir = Path(args.export_dir)
     server_dir = Path(args.server_dir)
